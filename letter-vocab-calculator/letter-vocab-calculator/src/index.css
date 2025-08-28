@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles can be added here.  In this project we simply
+ * specify a default font family using Tailwind's utility classes.
+ */
+body {
+  @apply font-sans;
+}
