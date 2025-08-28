@@ -1,18 +1,18 @@
 import React from "react";
 
 export interface ProgressBarProps {
-  /** The label describing what this progress bar represents */
+  /** 이 진행률 바가 나타내는 것을 설명하는 라벨입니다 */
   label: string;
-  /** The current value measured against the maximum */
+  /** 최대값에 대비한 현재 값입니다 */
   value: number;
-  /** The maximum value of the progress bar */
+  /** 진행률 바의 최대값입니다 */
   max: number;
 }
 
 /**
- * A horizontal progress bar that visualises how close a numeric value is to a
- * predefined maximum.  When the current value exceeds the maximum the bar
- * turns red to draw attention.  Otherwise it is rendered in blue.
+ * 숫자 값이 미리 정의된 최대값에 얼마나 가까운지를 시각화하는
+ * 수평 진행률 바입니다. 현재 값이 최대값을 초과하면 바가
+ * 주의를 끌기 위해 빨간색으로 변합니다. 그렇지 않으면 파란색으로 렌더링됩니다.
  */
 const ProgressBar: React.FC<ProgressBarProps> = ({ label, value, max }) => {
   const percentage = Math.min((value / max) * 100, 100);
@@ -50,7 +50,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ label, value, max }) => {
       </div>
       {isOverLimit && (
         <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-          {Math.abs(max - value)} characters over limit
+          제한 초과 {Math.abs(max - value)} 글자
         </p>
       )}
     </div>
