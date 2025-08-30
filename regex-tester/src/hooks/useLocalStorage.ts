@@ -1,64 +1,86 @@
 import { useState, useEffect } from "react";
 
 /**
- * Persist a piece of state to the browser's localStorage.  When the
- * hook initialises it attempts to read a previously saved value.  Any
- * changes to the state are automatically synchronised back to
- * localStorage.
+ * localStorage를 사용하여 상태를 영구적으로 저장하는 커스텀 훅
  *
- * @param key A unique key used to store and retrieve the value
- * @param defaultValue A default value returned if nothing is stored
+ * 이 훅은 컴포넌트의 상태를 브라우저의 localStorage에 자동으로 저장하고,
+ * 페이지 새로고침 시에도 상태를 복원합니다.
+ *
+ * @template T - 저장할 상태의 타입
+ * @param {string} key - localStorage에 사용할 키
+ * @param {T} initialValue - 초기값
+ * @returns {[T, (value: T | ((prev: T) => T)) => void]} 상태와 상태 설정 함수
+ *
+ * @example
+ * ```tsx
+ * const [user, setUser] = useLocalStorage('user', { name: '', email: '' });
+ *
+ * // 상태 설정
+ * setUser({ name: 'John', email: 'john@example.com' });
+ *
+ * // 함수형 업데이트
+ * setUser(prev => ({ ...prev, name: 'Jane' }));
+ * ```
  */
-function useLocalStorage<T>(key: string, defaultValue: T) {
-  const [value, setValue] = useState<T>(() => {
-    if (typeof window === "undefined") return defaultValue;
+function useLocalStorage<T>(
+  key: string,
+  initialValue: T
+): [T, (value: T | ((prev: T) => T)) => void] {
+  // localStorage에서 값을 가져오거나 초기값을 사용
+  const [storedValue, setStoredValue] = useState<T>(() => {
     try {
-      const stored = window.localStorage.getItem(key);
-      if (!stored) return defaultValue;
-
-      // ✅ 타입 검증 추가
-      const parsed = JSON.parse(stored);
-      // 기본 타입 검증 (원시 타입의 경우)
-      if (typeof defaultValue === "string" && typeof parsed !== "string") {
-        console.warn(
-          `useLocalStorage: stored value for key "${key}" is not a string, using default`
-        );
-        return defaultValue;
+      const item = window.localStorage.getItem(key);
+      if (item) {
+        const parsed = JSON.parse(item);
+        // 기본 타입 체크를 통한 타입 안전성 향상
+        if (typeof parsed === typeof initialValue) {
+          return parsed;
+        }
       }
-      if (typeof defaultValue === "number" && typeof parsed !== "number") {
-        console.warn(
-          `useLocalStorage: stored value for key "${key}" is not a number, using default`
-        );
-        return defaultValue;
-      }
-      if (typeof defaultValue === "boolean" && typeof parsed !== "boolean") {
-        console.warn(
-          `useLocalStorage: stored value for key "${key}" is not a boolean, using default`
-        );
-        return defaultValue;
-      }
-
-      return parsed as T;
+      return initialValue;
     } catch (error) {
-      console.warn("useLocalStorage: unable to parse stored value", error);
-      return defaultValue;
+      console.error(`localStorage에서 키 "${key}" 읽기 실패:`, error);
+      return initialValue;
     }
   });
 
-  useEffect(() => {
+  // localStorage에 값을 저장하는 함수
+  const setValue = (value: T | ((prev: T) => T)) => {
     try {
-      // ✅ undefined 값 저장 방지
-      if (value === undefined) {
+      // 함수형 업데이트 지원
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+
+      // undefined 값은 localStorage에서 제거
+      if (valueToStore === undefined) {
         window.localStorage.removeItem(key);
       } else {
-        window.localStorage.setItem(key, JSON.stringify(value));
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
     } catch (error) {
-      console.warn("useLocalStorage: unable to set value", error);
+      console.error(`localStorage에 키 "${key}" 저장 실패:`, error);
     }
-  }, [key, value]);
+  };
 
-  return [value, setValue] as [T, React.Dispatch<React.SetStateAction<T>>];
+  // 다른 탭에서 localStorage 변경 감지
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === key && e.newValue !== null) {
+        try {
+          const newValue = JSON.parse(e.newValue);
+          setStoredValue(newValue);
+        } catch (error) {
+          console.error(`localStorage 변경사항 파싱 실패:`, error);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [key]);
+
+  return [storedValue, setValue];
 }
 
 export default useLocalStorage;

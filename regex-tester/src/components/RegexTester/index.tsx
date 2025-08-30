@@ -12,13 +12,23 @@ import useLocalStorage from "../../hooks/useLocalStorage";
 import useClipboard from "../../hooks/useClipboard";
 
 /**
- * RegexTester component provides an interactive environment for
- * experimenting with regular expressions.  Users can input a pattern
- * and flags, supply test text, view highlighted matches and capture
- * groups, perform replacements and store patterns for later use.
+ * 정규표현식 테스터 메인 컴포넌트
+ *
+ * 이 컴포넌트는 사용자가 정규표현식을 작성하고 테스트할 수 있는 완전한 웹 애플리케이션을 제공합니다.
+ *
+ * 주요 기능:
+ * - 정규식 패턴 입력 및 검증
+ * - 플래그 옵션 (g, i, m, s, u) 설정
+ * - 실시간 매치 결과 표시
+ * - 텍스트 치환 기능
+ * - 패턴 저장/불러오기
+ * - 정규식 템플릿 제공
+ * - 치트시트 및 패턴 설명
+ *
+ * @returns {JSX.Element} 정규표현식 테스터 UI
  */
 const RegexTester: React.FC = () => {
-  // Persist user inputs to localStorage to restore them on reload.
+  // localStorage에 사용자 입력을 저장하여 새로고침 시 복원
   const [pattern, setPattern] = useLocalStorage<string>(
     "regexTester:pattern",
     ""
@@ -37,7 +47,7 @@ const RegexTester: React.FC = () => {
     []
   );
 
-  // Local state for matches, description tokens and any compile errors.
+  // 매치 결과, 설명 토큰, 컴파일 에러 등을 위한 로컬 상태
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [segments, setSegments] = useState<
     { text: string; matchIndex: number | null }[]
@@ -52,24 +62,47 @@ const RegexTester: React.FC = () => {
   } | null>(null);
   const [copied, copy] = useClipboard();
 
-  // Build the regex and compute matches whenever pattern, flags or
-  // testText change.  Also update description and replacement output.
+  // 패턴, 플래그 또는 테스트 텍스트가 변경될 때마다 정규식을 빌드하고 매치를 계산
   useEffect(() => {
-    setLoading(true);
+    if (!pattern.trim()) {
+      setMatches([]);
+      setSegments([{ text: testText, matchIndex: null }]);
+      setDescription([]);
+      setRegexError(null);
+      setReplaceOutput("");
+      return;
+    }
+
     const regex = buildRegex(pattern, flags);
     if (!regex) {
       setRegexError("Invalid regular expression");
       setMatches([]);
       setSegments([{ text: testText, matchIndex: null }]);
-      setReplaceOutput(testText);
+      setDescription([]);
+      setReplaceOutput("");
+      return;
+    }
+
+    setRegexError(null);
+    const results = getMatches(regex, testText);
+    setMatches(results);
+    setDescription(describePattern(pattern));
+
+    // 치환 결과 계산
+    if (replacement.trim()) {
+      const output = applyReplace(regex, testText, replacement);
+      setReplaceOutput(output);
     } else {
-      setRegexError(null);
-      // Compute matches
-      const results = getMatches(regex, testText);
-      setMatches(results);
-      // Build segments for highlighting
+      setReplaceOutput("");
+    }
+
+    // 하이라이트를 위한 세그먼트 생성
+    if (results.length === 0) {
+      setSegments([{ text: testText, matchIndex: null }]);
+    } else {
       const segs: { text: string; matchIndex: number | null }[] = [];
       let lastIndex = 0;
+
       results.forEach((res, idx) => {
         if (res.index > lastIndex) {
           segs.push({
@@ -80,29 +113,24 @@ const RegexTester: React.FC = () => {
         segs.push({ text: res.match, matchIndex: idx });
         lastIndex = res.index + res.match.length;
       });
+
       if (lastIndex < testText.length) {
-        segs.push({ text: testText.slice(lastIndex), matchIndex: null });
+        segs.push({
+          text: testText.slice(lastIndex),
+          matchIndex: null,
+        });
       }
+
       setSegments(segs);
-      // Compute replacement output
-      const replaced = applyReplace(regex, testText, replacement);
-      setReplaceOutput(replaced);
     }
-    // Compute description tokens
-    setDescription(describePattern(pattern));
-    setLoading(false);
   }, [pattern, flags, testText, replacement]);
 
-  // Clear toast after 2 seconds
+  // 키보드 단축키 처리
   useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 2000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
-  // Keyboard shortcuts: Alt+R to run/test (focus not required),
-  // Alt+S to save current regex, Ctrl/Cmd+Shift+C to copy replacement
-  useEffect(() => {
+    /**
+     * 키보드 이벤트 핸들러
+     * @param {KeyboardEvent} e - 키보드 이벤트 객체
+     */
     function handleKeyDown(e: KeyboardEvent) {
       const isCtrlOrCmd = e.ctrlKey || e.metaKey;
       if (isCtrlOrCmd && e.shiftKey && e.key.toLowerCase() === "c") {
@@ -113,7 +141,7 @@ const RegexTester: React.FC = () => {
         const key = e.key.toLowerCase();
         if (key === "r") {
           e.preventDefault();
-          // Re-run test by triggering effect (no manual trigger needed)
+          // 효과를 트리거하여 테스트 재실행 (수동 트리거 불필요)
           setToast({ message: "Regex re-evaluated", type: "success" });
         } else if (key === "s") {
           e.preventDefault();
@@ -123,9 +151,12 @@ const RegexTester: React.FC = () => {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  });
+  }, []);
 
-  // Toggle a regex flag in the flags string
+  /**
+   * 정규식 플래그를 토글합니다
+   * @param {string} flag - 토글할 플래그 (g, i, m, s, u)
+   */
   function toggleFlag(flag: string) {
     setFlags((prev) => {
       return prev.includes(flag)
@@ -135,12 +166,14 @@ const RegexTester: React.FC = () => {
             .join("")
         : (prev + flag)
             .split("")
-            .filter((c, i, arr) => arr.indexOf(c) === i) // remove duplicates
+            .filter((c, i, arr) => arr.indexOf(c) === i) // 중복 제거
             .join("");
     });
   }
 
-  // Save the current pattern and flags to localStorage
+  /**
+   * 현재 정규식 패턴을 저장합니다
+   */
   function saveCurrentPattern() {
     if (!pattern) {
       setToast({ message: "Pattern is empty", type: "error" });
@@ -158,27 +191,40 @@ const RegexTester: React.FC = () => {
     setToast({ message: "Pattern saved", type: "success" });
   }
 
-  // Load a saved pattern
+  /**
+   * 저장된 패턴을 불러옵니다
+   * @param {SavedPattern} item - 불러올 저장된 패턴
+   */
   function loadPattern(item: SavedPattern) {
     setPattern(item.pattern);
     setFlags(item.flags);
     setToast({ message: "Pattern loaded", type: "success" });
   }
 
-  // Delete a saved pattern
+  /**
+   * 저장된 패턴을 삭제합니다
+   * @param {SavedPattern} item - 삭제할 저장된 패턴
+   */
   function deletePattern(item: SavedPattern) {
     setSavedPatterns(savedPatterns.filter((p) => p !== item));
     setToast({ message: "Pattern deleted", type: "success" });
   }
 
-  // Apply a regex template from the templates list
+  /**
+   * 정규식 템플릿을 적용합니다
+   * @param {Object} tpl - 적용할 템플릿 객체
+   * @param {string} tpl.pattern - 템플릿 패턴
+   * @param {string} tpl.flags - 템플릿 플래그
+   */
   function applyTemplate(tpl: { pattern: string; flags: string }) {
     setPattern(tpl.pattern);
     setFlags(tpl.flags);
     setToast({ message: `${tpl.pattern} template applied`, type: "success" });
   }
 
-  // Copy the replacement output to clipboard
+  /**
+   * 치환 결과를 클립보드에 복사합니다
+   */
   async function handleCopy() {
     if (!replaceOutput) return;
     try {
@@ -189,12 +235,12 @@ const RegexTester: React.FC = () => {
     }
   }
 
-  // Determine toast background colour
+  // 토스트 배경색 결정
   const toastBg = toast?.type === "success" ? "bg-green-600" : "bg-red-600";
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Regex input and options */}
+      {/* 정규식 입력 및 옵션 */}
       <div className="space-y-4 mb-6">
         <div className="flex flex-col">
           <label
@@ -218,7 +264,7 @@ const RegexTester: React.FC = () => {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          {/* Flags toggles */}
+          {/* 플래그 토글 */}
           {[
             {
               flag: "g",
@@ -263,14 +309,14 @@ const RegexTester: React.FC = () => {
                   ({flag})
                 </span>
               </label>
-              {/* Tooltip */}
+              {/* 툴팁 */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                 {description}
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
               </div>
             </div>
           ))}
-          {/* Templates selection */}
+          {/* 템플릿 선택 */}
           <label
             htmlFor="template"
             className="text-sm font-medium ml-4 text-gray-700 dark:text-gray-300"
@@ -306,7 +352,7 @@ const RegexTester: React.FC = () => {
           </button>
         </div>
       </div>
-      {/* Test text and replacement */}
+      {/* 테스트 텍스트 및 치환 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="flex flex-col">
           <label
@@ -358,7 +404,7 @@ const RegexTester: React.FC = () => {
           </button>
         </div>
       </div>
-      {/* Highlighted test text and match results */}
+      {/* 하이라이트된 테스트 텍스트 및 매치 결과 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
           <h2 className="text-md font-semibold mb-2 text-gray-800 dark:text-gray-200">
@@ -410,7 +456,7 @@ const RegexTester: React.FC = () => {
           </ul>
         </div>
       </div>
-      {/* Description and cheat sheet */}
+      {/* 설명 및 치트시트 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
           <h2 className="text-md font-semibold mb-2 text-gray-800 dark:text-gray-200">
@@ -459,7 +505,7 @@ const RegexTester: React.FC = () => {
           </ul>
         </div>
       </div>
-      {/* Saved patterns */}
+      {/* 저장된 패턴 */}
       <div className="mb-6">
         <h2 className="text-md font-semibold mb-2 text-gray-800 dark:text-gray-200">
           저장된 표현식
@@ -499,7 +545,7 @@ const RegexTester: React.FC = () => {
           ))}
         </ul>
       </div>
-      {/* Toast */}
+      {/* 토스트 알림 */}
       {toast && (
         <div
           role="alert"
