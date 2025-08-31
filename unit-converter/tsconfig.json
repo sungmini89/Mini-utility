@@ -1,0 +1,59 @@
+{
+  "compilerOptions": {
+    // TypeScript 컴파일러 옵션
+
+    // 타겟 ECMAScript 버전
+    "target": "ESNext",
+
+    // 클래스 필드 정의 방식
+    "useDefineForClassFields": true,
+
+    // 모듈 시스템
+    "module": "ESNext",
+
+    // 포함할 라이브러리
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+
+    // JavaScript 파일 허용 여부
+    "allowJs": false,
+
+    // 라이브러리 체크 건너뛰기
+    "skipLibCheck": true,
+
+    // ES 모듈 상호운용성
+    "esModuleInterop": false,
+
+    // 합성 기본 가져오기 허용
+    "allowSyntheticDefaultImports": true,
+
+    // 엄격한 타입 검사
+    "strict": true,
+
+    // 파일명 대소문자 일관성 강제
+    "forceConsistentCasingInFileNames": true,
+
+    // switch 문 fallthrough 방지
+    "noFallthroughCasesInSwitch": true,
+
+    // 모듈 해석 방식
+    "moduleResolution": "Node",
+
+    // JSON 모듈 허용
+    "resolveJsonModule": true,
+
+    // 격리된 모듈
+    "isolatedModules": true,
+
+    // JavaScript 출력 생성 안함
+    "noEmit": true,
+
+    // JSX 변환 방식
+    "jsx": "react-jsx"
+  },
+
+  // 컴파일할 파일/폴더 포함
+  "include": ["src"],
+
+  // 프로젝트 참조
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

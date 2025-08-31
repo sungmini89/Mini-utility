@@ -1,0 +1,43 @@
+{
+  "name": "unit-converter",
+  "version": "0.0.1",
+  "private": true,
+  "description": "단위 변환기 - 길이, 무게, 온도, 면적, 부피, 속도, 데이터 단위 간 변환을 지원하는 웹 애플리케이션",
+  "keywords": [
+    "unit-converter",
+    "react",
+    "typescript",
+    "vite",
+    "tailwindcss",
+    "pwa"
+  ],
+  "author": "Unit Converter Team",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "jest"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.1.2",
+    "@types/jest": "^29.5.8",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@vitejs/plugin-react": "^4.1.1",
+    "autoprefixer": "^10.4.16",
+    "jest": "^29.7.0",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.5",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0",
+    "vite-plugin-pwa": "^0.17.4"
+  }
+}
