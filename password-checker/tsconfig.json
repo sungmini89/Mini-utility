@@ -1,0 +1,49 @@
+{
+  /**
+   * TypeScript 컴파일러 설정
+   * 
+   * React 애플리케이션을 위한 TypeScript 설정을 정의합니다.
+   * - 최신 ECMAScript 기능 지원
+   * - React JSX 지원
+   * - 엄격한 타입 검사
+   * - 모듈 해석 설정
+   */
+  "compilerOptions": {
+    /** 컴파일 대상 ECMAScript 버전 */
+    "target": "ESNext",
+    /** 클래스 필드에 대한 define 사용 */
+    "useDefineForClassFields": true,
+    /** 모듈 시스템 */
+    "module": "ESNext",
+    /** 포함할 라이브러리 */
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    /** JavaScript 파일 허용 여부 */
+    "allowJs": false,
+    /** 라이브러리 타입 검사 건너뛰기 */
+    "skipLibCheck": true,
+    /** ES 모듈 상호운용성 */
+    "esModuleInterop": false,
+    /** 합성 기본 가져오기 허용 */
+    "allowSyntheticDefaultImports": true,
+    /** 엄격한 타입 검사 활성화 */
+    "strict": true,
+    /** 파일명 대소문자 일관성 강제 */
+    "forceConsistentCasingInFileNames": true,
+    /** switch 문 fallthrough 방지 */
+    "noFallthroughCasesInSwitch": true,
+    /** 모듈 해석 전략 */
+    "moduleResolution": "Node",
+    /** JSON 모듈 해석 허용 */
+    "resolveJsonModule": true,
+    /** 격리된 모듈 처리 */
+    "isolatedModules": true,
+    /** 파일 출력 비활성화 (Vite가 처리) */
+    "noEmit": true,
+    /** React JSX 지원 */
+    "jsx": "react-jsx"
+  },
+  /** 컴파일 대상 디렉토리 */
+  "include": ["src"],
+  /** 프로젝트 참조 */
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

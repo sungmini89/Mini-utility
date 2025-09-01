@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles for the Password Strength Checker. Sets a sensible
+   default font family. Additional global styles can be added here. */
+body {
+  @apply font-sans;
+}
